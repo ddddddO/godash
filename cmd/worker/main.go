@@ -29,24 +29,28 @@ func main() {
 
 	fmt.Println("start worker")
 
-	tasks := make(chan *taskAndConn)
-
 	ctx, cancel := context.WithCancel(context.Background())
+	run(ctx)
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
+
+	<-sig
+	fmt.Println("graceful shutdown...")
+	cancel()
+	time.Sleep(3 * time.Second)
+}
+
+func run(ctx context.Context) {
+	tasks := make(chan *taskAndConn)
 
 	// 複数タスク受け付けてキューにエンキューするgoroutine
 	go recieveTasks(ctx, tasks)
 
 	// キューから受け付けたタスクをデキューして処理するgoroutine
 	go processTasks(ctx, tasks)
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
-
-	<-sig
-	cancel()
-	time.Sleep(3 * time.Second)
-	fmt.Println("graceful shutdown...")
 }
+
 
 func recieveTasks(_ context.Context, tasks chan<- *taskAndConn) {
 	defer func() {
