@@ -42,13 +42,14 @@ func main() {
 	wg.Add(1)
 	// query結果を受け取るよう
 	go func() {
+		defer wg.Done()
+
 		result := make([]byte, 9)
 		if _, err := conn.Read(result); err != nil {
 			panic(err)
 		}
 
 		fmt.Println(string(result))
-		wg.Done()
 	}()
 
 	// taskをworkerプロセスへ

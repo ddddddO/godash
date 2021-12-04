@@ -41,6 +41,11 @@ func main() {
 }
 
 func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
+	defer func() {
+		close(tasks)
+		wg.Done()
+	}()
+
 	ln, err := net.Listen("tcp", ":9999")
 	if err != nil {
 		fmt.Println("cannot listen", err)
@@ -73,12 +78,11 @@ func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 			tasks <- task
 		}()
 	}
-
-	close(tasks)
-	wg.Done()
 }
 
 func processTasks(tasks <-chan *taskAndConn, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	for t := range tasks {
 		go func() {
 			defer t.conn.Close()
@@ -90,6 +94,4 @@ func processTasks(tasks <-chan *taskAndConn, wg *sync.WaitGroup) {
 			}
 		}()
 	}
-
-	wg.Done()
 }
