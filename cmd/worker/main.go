@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/ddddddO/godash/model"
 )
@@ -21,29 +25,32 @@ func main() {
 	// クエリ取得
 	// クエリパース
 	// クエリ投げる
-	// クエリ結果の返却をどうしよう。cliの方に伝えないといけない
+	// クエリ結果の返却
 
 	fmt.Println("start worker")
 
 	tasks := make(chan *taskAndConn)
-	wg := &sync.WaitGroup{}
+
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// 複数タスク受け付けてキューにエンキューするgoroutine
-	wg.Add(1)
-	go recieveTasks(tasks, wg)
+	go recieveTasks(ctx, tasks)
 
 	// キューから受け付けたタスクをデキューして処理するgoroutine
-	wg.Add(1)
-	go processTasks(tasks, wg)
+	go processTasks(ctx, tasks)
 
-	wg.Wait()
-	fmt.Println("done...")
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
+
+	<-sig
+	cancel()
+	time.Sleep(3 * time.Second)
+	fmt.Println("graceful shutdown...")
 }
 
-func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
+func recieveTasks(_ context.Context, tasks chan<- *taskAndConn) {
 	defer func() {
 		close(tasks)
-		wg.Done()
 	}()
 
 	ln, err := net.Listen("tcp", ":9999")
@@ -82,22 +89,26 @@ func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 	}
 }
 
-func processTasks(tasks <-chan *taskAndConn, wg *sync.WaitGroup) {
-	defer wg.Done()
+func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("process done")
+			return
+		case t := <-tasks:
+			go func() {
+				defer t.conn.Close()
 
-	for t := range tasks {
-		go func() {
-			defer t.conn.Close()
+				fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
 
-			fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
-
-			result := &model.Result{
-				StatusCode:  200,
-				QueryResult: "xxxxx",
-			}
-			if err := json.NewEncoder(t.conn).Encode(result); err != nil {
-				fmt.Println(err)
-			}
-		}()
+				result := &model.Result{
+					StatusCode:  200,
+					QueryResult: "xxxxx",
+				}
+				if err := json.NewEncoder(t.conn).Encode(result); err != nil {
+					fmt.Println(err)
+				}
+			}()
+		}
 	}
 }
