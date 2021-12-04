@@ -1,17 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"sync"
-	"strconv"
-	"io"
+
+	"github.com/ddddddO/godash/model"
 )
 
 func main() {
 	fmt.Println("start worker")
 
-	tasksCh := make(chan int)
+	tasksCh := make(chan *model.Task)
 	wg := &sync.WaitGroup{}
 
 	// 複数タスク受け付けてキューにエンキューするgoroutine
@@ -26,9 +27,7 @@ func main() {
 	fmt.Println("done...")
 }
 
-func recieveTasks(tasks chan<- int, wg *sync.WaitGroup) {
-	// NOTE: unixドメインソケットがwslでは使えないよう
-	// ln, err := net.Listen("unix", "./sock")
+func recieveTasks(tasks chan<- *model.Task, wg *sync.WaitGroup) {
 	ln, err := net.Listen("tcp", ":9999")
 	if err != nil {
 		fmt.Println("cannot listen", err)
@@ -47,27 +46,15 @@ func recieveTasks(tasks chan<- int, wg *sync.WaitGroup) {
 		go func() {
 			defer conn.Close()
 
-			buf := make([]byte, 3) // NOTE: 送られてくるデータのサイズに合わせないと余計なパディング含まれる
-			_, err := conn.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					fmt.Println("connection closed...")
-					return
-				}
-
-				fmt.Println("cannot read", err)
-				return
-			}
-
 			fmt.Println("received task")
 
-			t, err := strconv.Atoi(string(buf))
-			if err != nil {
-				fmt.Println("can not cast", err)
+			receivedTask := &model.Task{}
+			if err := json.NewDecoder(conn).Decode(receivedTask); err != nil {
+				fmt.Println(err)
 				return
 			}
 
-			tasks <- t
+			tasks <- receivedTask
 		}()
 	}
 
@@ -75,9 +62,9 @@ func recieveTasks(tasks chan<- int, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func processTasks(tasks <-chan int, wg *sync.WaitGroup) {
+func processTasks(tasks <-chan *model.Task, wg *sync.WaitGroup) {
 	for t := range tasks {
-		fmt.Printf("task:%d\n", t)
+		fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
 	}
 
 	wg.Done()

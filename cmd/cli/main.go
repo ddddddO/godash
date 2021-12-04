@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+
+	"github.com/ddddddO/godash/model"
 )
 
 const (
@@ -22,7 +25,13 @@ func main() {
 	defer conn.Close()
 
 	fmt.Println("send task")
-	if _, err := conn.Write([]byte("555")); err != nil {
+
+	pgTask := model.Task{
+		DataSourceType: "postgres",
+		Query: "select * from test",
+	}
+
+	if err := json.NewEncoder(conn).Encode(pgTask); err != nil {
 		panic(err)
 	}
 }
