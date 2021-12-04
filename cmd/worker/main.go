@@ -47,30 +47,27 @@ func recieveTasks(tasks chan<- int, wg *sync.WaitGroup) {
 		go func() {
 			defer conn.Close()
 
-			// 1接続中のdologgerから送られてきたログを1件ずつ処理
-			for {
-				buf := make([]byte, 3) // NOTE: 送られてくるデータのサイズに合わせないと余計なパディング含まれる
-				_, err := conn.Read(buf)
-				if err != nil {
-					if err == io.EOF {
-						fmt.Println("connection closed...")
-						return
-					}
-
-					fmt.Println("cannot read", err)
-					continue
+			buf := make([]byte, 3) // NOTE: 送られてくるデータのサイズに合わせないと余計なパディング含まれる
+			_, err := conn.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					fmt.Println("connection closed...")
+					return
 				}
 
-				fmt.Println("received task")
-
-				t, err := strconv.Atoi(string(buf))
-				if err != nil {
-					fmt.Println("can not cast", err)
-					continue
-				}
-
-				tasks <- t
+				fmt.Println("cannot read", err)
+				return
 			}
+
+			fmt.Println("received task")
+
+			t, err := strconv.Atoi(string(buf))
+			if err != nil {
+				fmt.Println("can not cast", err)
+				return
+			}
+
+			tasks <- t
 		}()
 	}
 
