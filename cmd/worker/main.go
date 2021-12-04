@@ -91,7 +91,11 @@ func processTasks(tasks <-chan *taskAndConn, wg *sync.WaitGroup) {
 
 			fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
 
-			if _, err := t.conn.Write([]byte("succeeded")); err != nil {
+			result := &model.Result{
+				StatusCode:  200,
+				QueryResult: "xxxxx",
+			}
+			if err := json.NewEncoder(t.conn).Encode(result); err != nil {
 				fmt.Println(err)
 			}
 		}()

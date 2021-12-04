@@ -44,13 +44,13 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		result := make([]byte, 9)
-		if _, err := conn.Read(result); err != nil {
+		result := &model.Result{}
+		if err := json.NewDecoder(conn).Decode(result); err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		fmt.Println(string(result))
+		fmt.Printf("Result\nstatus: %d\nquery result: %s\n", result.StatusCode, result.QueryResult)
 	}()
 
 	// taskをworkerプロセスへ
