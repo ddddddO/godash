@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"net"
 	"sync"
+	"strconv"
+	"io"
 )
 
 func main() {
+	fmt.Println("start worker")
+
 	tasksCh := make(chan int)
 	wg := &sync.WaitGroup{}
 
@@ -18,15 +22,56 @@ func main() {
 	go processTasks(tasksCh, wg)
 	wg.Add(1)
 
-	// time.Sleep(13 * time.Second)
 	wg.Wait()
 	fmt.Println("done...")
 }
 
 func recieveTasks(tasks chan<- int, wg *sync.WaitGroup) {
-	for i := 0; i < 5; i++ {
-		tasks <- i
-		time.Sleep(1 * time.Second)
+	// NOTE: unixドメインソケットがwslでは使えないよう
+	// ln, err := net.Listen("unix", "./sock")
+	ln, err := net.Listen("tcp", ":9999")
+	if err != nil {
+		fmt.Println("cannot listen", err)
+	}
+
+	// 接続を待ち受け続ける
+	for {
+		// 1接続分
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("cannot accept", err)
+		}
+		fmt.Println("connected")
+
+		// 複数の接続を扱うためgoroutine
+		go func() {
+			defer conn.Close()
+
+			// 1接続中のdologgerから送られてきたログを1件ずつ処理
+			for {
+				buf := make([]byte, 3) // NOTE: 送られてくるデータのサイズに合わせないと余計なパディング含まれる
+				_, err := conn.Read(buf)
+				if err != nil {
+					if err == io.EOF {
+						fmt.Println("connection closed...")
+						return
+					}
+
+					fmt.Println("cannot read", err)
+					continue
+				}
+
+				fmt.Println("received task")
+
+				t, err := strconv.Atoi(string(buf))
+				if err != nil {
+					fmt.Println("can not cast", err)
+					continue
+				}
+
+				tasks <- t
+			}
+		}()
 	}
 
 	close(tasks)
