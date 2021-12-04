@@ -10,6 +10,14 @@ import (
 )
 
 func main() {
+	// TODO:
+	// データソース接続情報取得（どこから？DB or redis?）
+	// データソース接続
+	// クエリ取得
+	// クエリパース
+	// クエリ投げる
+	// クエリ結果の返却をどうしよう。cliの方に伝えないといけない
+
 	fmt.Println("start worker")
 
 	tasksCh := make(chan *model.Task)

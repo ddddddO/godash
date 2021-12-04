@@ -15,6 +15,12 @@ const (
 )
 
 func main() {
+	// TODO:
+	// データソース接続情報（コマンドライン引数 or 設定ファイル or ...）
+	// データソース接続確認
+	// データソース接続情報保存（どこに？DB or redis?）
+	// クエリ取得（コマンドライン引数 or 標準入力 or ...）
+
 	conn, err := net.Dial(
 		protocol,
 		fmt.Sprintf("%s:%d", targetHost, targetPort),
@@ -28,7 +34,7 @@ func main() {
 
 	pgTask := model.Task{
 		DataSourceType: "postgres",
-		Query:          "select * from test",
+		Query: "select * from test",
 	}
 
 	if err := json.NewEncoder(conn).Encode(pgTask); err != nil {
