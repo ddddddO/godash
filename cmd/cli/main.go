@@ -28,7 +28,7 @@ func main() {
 
 	pgTask := model.Task{
 		DataSourceType: "postgres",
-		Query: "select * from test",
+		Query:          "select * from test",
 	}
 
 	if err := json.NewEncoder(conn).Encode(pgTask); err != nil {
