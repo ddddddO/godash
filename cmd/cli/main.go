@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/ddddddO/godash/model"
 )
@@ -34,10 +35,26 @@ func main() {
 
 	pgTask := model.Task{
 		DataSourceType: "postgres",
-		Query: "select * from test",
+		Query:          "select * from test",
 	}
 
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	// query結果を受け取るよう
+	go func() {
+		result := make([]byte, 9)
+		if _, err := conn.Read(result); err != nil {
+			panic(err)
+		}
+
+		fmt.Println(string(result))
+		wg.Done()
+	}()
+
+	// taskをworkerプロセスへ
 	if err := json.NewEncoder(conn).Encode(pgTask); err != nil {
 		panic(err)
 	}
+
+	wg.Wait()
 }

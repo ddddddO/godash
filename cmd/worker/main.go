@@ -57,8 +57,6 @@ func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 
 		// 複数の接続を扱うためgoroutine
 		go func() {
-			defer conn.Close()
-
 			fmt.Println("received task")
 
 			receivedTask := &model.Task{}
@@ -82,7 +80,15 @@ func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 
 func processTasks(tasks <-chan *taskAndConn, wg *sync.WaitGroup) {
 	for t := range tasks {
-		fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
+		go func() {
+			defer t.conn.Close()
+
+			fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
+
+			if _, err := t.conn.Write([]byte("succeeded")); err != nil {
+				fmt.Println(err)
+			}
+		}()
 	}
 
 	wg.Done()
