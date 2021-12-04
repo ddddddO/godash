@@ -9,6 +9,11 @@ import (
 	"github.com/ddddddO/godash/model"
 )
 
+type taskAndConn struct {
+	*model.Task
+	conn net.Conn
+}
+
 func main() {
 	// TODO:
 	// データソース接続情報取得（どこから？DB or redis?）
@@ -20,22 +25,22 @@ func main() {
 
 	fmt.Println("start worker")
 
-	tasksCh := make(chan *model.Task)
+	tasks := make(chan *taskAndConn)
 	wg := &sync.WaitGroup{}
 
 	// 複数タスク受け付けてキューにエンキューするgoroutine
 	wg.Add(1)
-	go recieveTasks(tasksCh, wg)
+	go recieveTasks(tasks, wg)
 
 	// キューから受け付けたタスクをデキューして処理するgoroutine
 	wg.Add(1)
-	go processTasks(tasksCh, wg)
+	go processTasks(tasks, wg)
 
 	wg.Wait()
 	fmt.Println("done...")
 }
 
-func recieveTasks(tasks chan<- *model.Task, wg *sync.WaitGroup) {
+func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 	ln, err := net.Listen("tcp", ":9999")
 	if err != nil {
 		fmt.Println("cannot listen", err)
@@ -62,7 +67,12 @@ func recieveTasks(tasks chan<- *model.Task, wg *sync.WaitGroup) {
 				return
 			}
 
-			tasks <- receivedTask
+			task := &taskAndConn{
+				Task: receivedTask,
+				conn: conn,
+			}
+
+			tasks <- task
 		}()
 	}
 
@@ -70,7 +80,7 @@ func recieveTasks(tasks chan<- *model.Task, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func processTasks(tasks <-chan *model.Task, wg *sync.WaitGroup) {
+func processTasks(tasks <-chan *taskAndConn, wg *sync.WaitGroup) {
 	for t := range tasks {
 		fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
 	}
