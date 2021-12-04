@@ -46,7 +46,8 @@ func main() {
 
 		result := make([]byte, 9)
 		if _, err := conn.Read(result); err != nil {
-			panic(err)
+			fmt.Println(err)
+			return
 		}
 
 		fmt.Println(string(result))

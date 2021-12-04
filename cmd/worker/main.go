@@ -49,6 +49,7 @@ func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 	ln, err := net.Listen("tcp", ":9999")
 	if err != nil {
 		fmt.Println("cannot listen", err)
+		return
 	}
 
 	// 接続を待ち受け続ける
@@ -57,6 +58,7 @@ func recieveTasks(tasks chan<- *taskAndConn, wg *sync.WaitGroup) {
 		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("cannot accept", err)
+			continue
 		}
 		fmt.Println("connected")
 
