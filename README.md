@@ -1,0 +1,2 @@
+# godash
+Redash Go implementation
