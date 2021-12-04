@@ -16,12 +16,12 @@ func main() {
 	wg := &sync.WaitGroup{}
 
 	// 複数タスク受け付けてキューにエンキューするgoroutine
-	go recieveTasks(tasksCh, wg)
 	wg.Add(1)
+	go recieveTasks(tasksCh, wg)
 
 	// キューから受け付けたタスクをデキューして処理するgoroutine
-	go processTasks(tasksCh, wg)
 	wg.Add(1)
+	go processTasks(tasksCh, wg)
 
 	wg.Wait()
 	fmt.Println("done...")
