@@ -2,7 +2,6 @@ package secretstore
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"strings"
 

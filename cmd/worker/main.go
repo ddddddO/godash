@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -49,7 +48,7 @@ func main() {
 }
 
 func action(c *cli.Context) error {
-	fmt.Println("start worker")
+	log.Println("start worker")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	tasks := make(chan *taskAndConn)
@@ -64,7 +63,7 @@ func action(c *cli.Context) error {
 	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
 
 	<-sig
-	fmt.Println("graceful shutdown...")
+	log.Println("graceful shutdown...")
 	cancel()
 	time.Sleep(3 * time.Second)
 	return nil
@@ -77,7 +76,7 @@ func recieveTasks(_ context.Context, tasks chan<- *taskAndConn) {
 
 	ln, err := net.Listen("tcp", ":9999")
 	if err != nil {
-		fmt.Println("cannot listen", err)
+		log.Printf("cannot listen: %v\n", err)
 		return
 	}
 
@@ -86,18 +85,18 @@ func recieveTasks(_ context.Context, tasks chan<- *taskAndConn) {
 		// 1接続分
 		conn, err := ln.Accept()
 		if err != nil {
-			fmt.Println("cannot accept", err)
+			log.Printf("cannot accept: %v\n", err)
 			continue
 		}
-		fmt.Println("connected")
+		log.Println("connected")
 
 		// 複数の接続を扱うためgoroutine
 		go func() {
-			fmt.Println("received task")
+			log.Println("received task")
 
 			receivedTask := &model.Task{}
 			if err := json.NewDecoder(conn).Decode(receivedTask); err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return
 			}
 
@@ -115,7 +114,7 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("process done")
+			log.Println("process done")
 			return
 		case t := <-tasks:
 			switch t.Task.Kind {
@@ -123,23 +122,28 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 				go settings(t)
 			case model.KindQuery:
 				go query(t)
+			default:
+				panic("unknown task kind")
 			}
 		}
 	}
 }
 
+// worker起動時に設定ファイルから接続情報格納先を取得して決める、でもいいかも
+const filePath = "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
+
 func settings(t *taskAndConn) {
 	defer t.conn.Close()
 
-	secretPath := "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
 	w := &worker{
-		ss: secretstore.NewFile(secretPath),
+		ss: secretstore.NewFile(filePath),
 		ds: datasource.NewPostgreSQL(),
 	}
 
 	statusCode := 200
 	err := w.runSettings(t.DataSourceType, t.Settings)
 	if err != nil {
+		log.Println(err)
 		statusCode = 500
 	}
 
@@ -147,22 +151,22 @@ func settings(t *taskAndConn) {
 		StatusCode: statusCode,
 	}
 	if err := json.NewEncoder(t.conn).Encode(result); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 
 func query(t *taskAndConn) {
 	defer t.conn.Close()
 
-	secretPath := "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
 	w := &worker{
-		ss: secretstore.NewFile(secretPath),
+		ss: secretstore.NewFile(filePath),
 		ds: datasource.NewPostgreSQL(),
 	}
 
 	statusCode := 200
 	queryResult, err := w.runQuery(t.DataSourceType, t.Query)
 	if err != nil {
+		log.Println(err)
 		statusCode = 500
 	}
 
@@ -171,16 +175,15 @@ func query(t *taskAndConn) {
 		QueryResult: queryResult,
 	}
 	if err := json.NewEncoder(t.conn).Encode(result); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 
 type worker struct {
-	ss secretStore // file or redash or postgres or embeded db or ...
+	ss secretStore // file or redis or postgres or embeded db or ...
 	ds dataSource  // 増やせるだけ...
 }
 
-// TODO: clientがデータソースの認証情報渡して、こちらはどこかに書き込む。それを読みだしてもいいかも
 type secretStore interface {
 	Store(dataSourceType, settings string) error
 	Load(dataSourceType string) (interface{}, error)
