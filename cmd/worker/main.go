@@ -104,11 +104,9 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 			go func() {
 				defer t.conn.Close()
 
-				fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
-
 				secretPath := "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
 				w := &worker{
-					ss: secretstore.NewFileSecretStore(secretPath),
+					ss: secretstore.NewFile(secretPath),
 					ds: datasource.NewPostgreSQL(),
 				}
 

@@ -3,22 +3,22 @@ package secretstore
 import (
 	"bufio"
 	"os"
+	"strings"
+
+	"github.com/pkg/errors"
 )
 
-type fileSecretStore struct {
+type file struct {
 	path string
 }
 
-func NewFileSecretStore(path string) *fileSecretStore {
-	return &fileSecretStore{
+func NewFile(path string) *file {
+	return &file{
 		path: path,
 	}
 }
 
-func (s fileSecretStore) Load(typ string) (interface{}, error) {
-	// typ?
-	_ = typ
-
+func (s file) Load(typ string) (interface{}, error) {
 	f, err := os.Open(s.path)
 	if err != nil {
 		return nil, err
@@ -29,6 +29,12 @@ func (s fileSecretStore) Load(typ string) (interface{}, error) {
 	secret := ""
 	for scanner.Scan() {
 		secret = scanner.Text()
+		if strings.Contains(secret, typ) {
+			break
+		}
+	}
+	if secret == "" {
+		return nil, errors.New("no datasource secret")
 	}
 
 	return secret, nil

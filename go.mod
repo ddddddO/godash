@@ -2,7 +2,10 @@ module github.com/ddddddO/godash
 
 go 1.17
 
-require github.com/jackc/pgx/v4 v4.14.1
+require (
+	github.com/jackc/pgx/v4 v4.14.1
+	github.com/pkg/errors v0.8.1
+)
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
