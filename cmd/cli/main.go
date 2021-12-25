@@ -27,9 +27,15 @@ func main() {
 	app := &cli.App{
 		Commands: []*cli.Command{
 			{
+				Name:    "settings",
+				Aliases: []string{"s"},
+				Usage:   "data source settings send to worker for saving.",
+				Action:  actionSettings,
+			},
+			{
 				Name:    "query",
 				Aliases: []string{"q"},
-				Usage:   "query send to worker",
+				Usage:   "query send to worker for executing.",
 				Action:  actionQuery,
 			},
 		},
@@ -38,6 +44,50 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func actionSettings(c *cli.Context) error {
+	conn, err := net.Dial(
+		protocol,
+		fmt.Sprintf("%s:%d", targetHost, targetPort),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	settings := c.Args().First()
+
+	task := model.Task{
+		Kind:           model.KindSettings,
+		DataSourceType: "postgres",
+		Settings:       settings,
+	}
+
+	fmt.Println("send task")
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	// 結果を受け取るよう
+	go func() {
+		defer wg.Done()
+
+		result := &model.Result{}
+		if err := json.NewDecoder(conn).Decode(result); err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Printf("Result\nstatus: %d\n", result.StatusCode)
+	}()
+
+	// taskをworkerプロセスへ
+	if err := json.NewEncoder(conn).Encode(task); err != nil {
+		panic(err)
+	}
+
+	wg.Wait()
+	return nil
 }
 
 func actionQuery(c *cli.Context) error {
@@ -53,6 +103,7 @@ func actionQuery(c *cli.Context) error {
 	query := c.Args().First()
 
 	task := model.Task{
+		Kind:           model.KindQuery,
 		DataSourceType: "postgres",
 		Query:          query,
 	}
