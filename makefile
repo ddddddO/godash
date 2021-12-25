@@ -9,3 +9,16 @@ run_worker:
 
 run_cli:
 	go run cmd/cli/main.go
+
+# 準備：https://qiita.com/yomon8/items/10b6cd47dda3fd3921c0
+PASSWORD=passw0rd
+VERSION=12.4
+run_pg:
+	docker run --rm -d --name sampledb \
+	-p 15432:5432 \
+	-e POSTGRES_PASSWORD=$(PASSWORD) \
+	-v /home/ochi/pg_sample:/tmp/data \
+	postgres:$(VERSION)-alpine
+
+conn_pg:
+	PGPASSWORD=$(PASSWORD) psql -U postgres -p 15432 -d dvdrental -h localhost

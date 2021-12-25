@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ddddddO/godash/model"
-	"github.com/ddddddO/godash/cmd/worker/secretstore"
 	"github.com/ddddddO/godash/cmd/worker/datasource"
+	"github.com/ddddddO/godash/cmd/worker/secretstore"
+	"github.com/ddddddO/godash/model"
 )
 
 type taskAndConn struct {
