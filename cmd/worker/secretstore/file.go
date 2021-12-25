@@ -49,8 +49,8 @@ func (fi *file) Load(typ string) (interface{}, error) {
 	scanner := bufio.NewScanner(f)
 	secret := ""
 	for scanner.Scan() {
-		secret = scanner.Text()
-		if strings.Contains(secret, typ) {
+		if strings.Contains(scanner.Text(), typ) {
+			secret = scanner.Text()
 			break
 		}
 	}

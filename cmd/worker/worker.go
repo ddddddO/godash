@@ -29,6 +29,7 @@ func (w *worker) runSettings(typ, settings string) error {
 	if err := w.ds.Connect(settings); err != nil {
 		return err
 	}
+	defer w.ds.Close()
 
 	return w.ss.Store(typ, settings)
 }
