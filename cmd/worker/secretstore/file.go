@@ -2,6 +2,7 @@ package secretstore
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strings"
 
@@ -18,8 +19,29 @@ func NewFile(path string) *file {
 	}
 }
 
-func (s file) Load(typ string) (interface{}, error) {
-	f, err := os.Open(s.path)
+func (fi *file) Store(typ, settings string) error {
+	f, err := os.Create(fi.path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// 既に保存されていればreturn
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), typ) {
+			return nil
+		}
+	}
+
+	if _, err := f.Write([]byte(settings)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (fi *file) Load(typ string) (interface{}, error) {
+	f, err := os.Open(fi.path)
 	if err != nil {
 		return nil, err
 	}

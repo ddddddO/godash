@@ -119,10 +119,35 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 			return
 		case t := <-tasks:
 			switch t.Task.Kind {
+			case model.KindSettings:
+				go settings(t)
 			case model.KindQuery:
 				go query(t)
 			}
 		}
+	}
+}
+
+func settings(t *taskAndConn) {
+	defer t.conn.Close()
+
+	secretPath := "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
+	w := &worker{
+		ss: secretstore.NewFile(secretPath),
+		ds: datasource.NewPostgreSQL(),
+	}
+
+	statusCode := 200
+	err := w.runSettings(t.DataSourceType, t.Settings)
+	if err != nil {
+		statusCode = 500
+	}
+
+	result := &model.Result{
+		StatusCode: statusCode,
+	}
+	if err := json.NewEncoder(t.conn).Encode(result); err != nil {
+		fmt.Println(err)
 	}
 }
 
@@ -136,7 +161,7 @@ func query(t *taskAndConn) {
 	}
 
 	statusCode := 200
-	queryResult, err := w.run(t.DataSourceType, t.Query)
+	queryResult, err := w.runQuery(t.DataSourceType, t.Query)
 	if err != nil {
 		statusCode = 500
 	}
@@ -157,6 +182,7 @@ type worker struct {
 
 // TODO: clientがデータソースの認証情報渡して、こちらはどこかに書き込む。それを読みだしてもいいかも
 type secretStore interface {
+	Store(dataSourceType, settings string) error
 	Load(dataSourceType string) (interface{}, error)
 }
 
@@ -167,7 +193,16 @@ type dataSource interface {
 	Close() error
 }
 
-func (w *worker) run(typ, query string) (string, error) {
+func (w *worker) runSettings(typ, settings string) error {
+	// data sourceへの接続確認
+	if err := w.ds.Connect(settings); err != nil {
+		return err
+	}
+
+	return w.ss.Store(typ, settings)
+}
+
+func (w *worker) runQuery(typ, query string) (string, error) {
 	secret, err := w.ss.Load(typ)
 	if err != nil {
 		return "", err
