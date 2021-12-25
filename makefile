@@ -5,7 +5,7 @@ test:
 	go test ./...
 
 run_worker:
-	go run cmd/worker/main.go run
+	go run cmd/worker/*.go run
 
 # datasourceの接続情報をサーバー側へ保存
 run_cli_s:

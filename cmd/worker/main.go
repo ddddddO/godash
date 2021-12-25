@@ -117,11 +117,17 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 			log.Println("process done")
 			return
 		case t := <-tasks:
+
+			w := newWorker(
+				secretstore.NewFile(filePath),
+				datasource.NewPostgreSQL(),
+			)
+
 			switch t.Task.Kind {
 			case model.KindSettings:
-				go settings(t)
+				go settings(t, w)
 			case model.KindQuery:
-				go query(t)
+				go query(t, w)
 			default:
 				panic("unknown task kind")
 			}
@@ -132,13 +138,8 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 // worker起動時に設定ファイルから接続情報格納先を取得して決める、でもいいかも
 const filePath = "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
 
-func settings(t *taskAndConn) {
+func settings(t *taskAndConn, w *worker) {
 	defer t.conn.Close()
-
-	w := &worker{
-		ss: secretstore.NewFile(filePath),
-		ds: datasource.NewPostgreSQL(),
-	}
 
 	statusCode := 200
 	err := w.runSettings(t.DataSourceType, t.Settings)
@@ -155,13 +156,8 @@ func settings(t *taskAndConn) {
 	}
 }
 
-func query(t *taskAndConn) {
+func query(t *taskAndConn, w *worker) {
 	defer t.conn.Close()
-
-	w := &worker{
-		ss: secretstore.NewFile(filePath),
-		ds: datasource.NewPostgreSQL(),
-	}
 
 	statusCode := 200
 	queryResult, err := w.runQuery(t.DataSourceType, t.Query)
@@ -177,53 +173,4 @@ func query(t *taskAndConn) {
 	if err := json.NewEncoder(t.conn).Encode(result); err != nil {
 		log.Println(err)
 	}
-}
-
-type worker struct {
-	ss secretStore // file or redis or postgres or embeded db or ...
-	ds dataSource  // 増やせるだけ...
-}
-
-type secretStore interface {
-	Store(dataSourceType, settings string) error
-	Load(dataSourceType string) (interface{}, error)
-}
-
-type dataSource interface {
-	Parse(string) error
-	Connect(interface{}) error
-	Execute(string) (string, error)
-	Close() error
-}
-
-func (w *worker) runSettings(typ, settings string) error {
-	// data sourceへの接続確認
-	if err := w.ds.Connect(settings); err != nil {
-		return err
-	}
-
-	return w.ss.Store(typ, settings)
-}
-
-func (w *worker) runQuery(typ, query string) (string, error) {
-	secret, err := w.ss.Load(typ)
-	if err != nil {
-		return "", err
-	}
-
-	if err := w.ds.Parse(query); err != nil {
-		return "", err
-	}
-
-	if err := w.ds.Connect(secret); err != nil {
-		return "", err
-	}
-	defer w.ds.Close()
-
-	result, err := w.ds.Execute(query)
-	if err != nil {
-		return "", err
-	}
-
-	return result, nil
 }
