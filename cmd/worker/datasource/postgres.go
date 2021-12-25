@@ -23,7 +23,7 @@ func (pg *postgreSQL) Parse(query string) error {
 }
 
 func (pg *postgreSQL) Connect(raw interface{}) error {
-	const url = "postgres://postgres:passw0rd@localhost:15432/dvdrental"
+	url := raw.(string)
 
 	conn, err := pgx.Connect(context.Background(), url)
 	if err != nil {
