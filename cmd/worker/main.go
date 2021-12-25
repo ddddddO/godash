@@ -118,36 +118,35 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 			fmt.Println("process done")
 			return
 		case t := <-tasks:
-			fmt.Println("xx")
-
 			switch t.Task.Kind {
 			case model.KindQuery:
-				fmt.Println("ddd")
-				go func() {
-					defer t.conn.Close()
-
-					secretPath := "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
-					w := &worker{
-						ss: secretstore.NewFile(secretPath),
-						ds: datasource.NewPostgreSQL(),
-					}
-
-					statusCode := 200
-					queryResult, err := w.run(t.DataSourceType, t.Query)
-					if err != nil {
-						statusCode = 500
-					}
-
-					result := &model.Result{
-						StatusCode:  statusCode,
-						QueryResult: queryResult,
-					}
-					if err := json.NewEncoder(t.conn).Encode(result); err != nil {
-						fmt.Println(err)
-					}
-				}()
+				go query(t)
 			}
 		}
+	}
+}
+
+func query(t *taskAndConn) {
+	defer t.conn.Close()
+
+	secretPath := "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
+	w := &worker{
+		ss: secretstore.NewFile(secretPath),
+		ds: datasource.NewPostgreSQL(),
+	}
+
+	statusCode := 200
+	queryResult, err := w.run(t.DataSourceType, t.Query)
+	if err != nil {
+		statusCode = 500
+	}
+
+	result := &model.Result{
+		StatusCode:  statusCode,
+		QueryResult: queryResult,
+	}
+	if err := json.NewEncoder(t.conn).Encode(result); err != nil {
+		fmt.Println(err)
 	}
 }
 
