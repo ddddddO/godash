@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/ddddddO/godash/model"
+	"github.com/ddddddO/godash/cmd/worker/secretstore"
+	"github.com/ddddddO/godash/cmd/worker/datasource"
 )
 
 type taskAndConn struct {
@@ -104,11 +106,9 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 
 				fmt.Printf("Task\ndata source type: %s\nquery: %s\n", t.DataSourceType, t.Query)
 
-				ss := &dummySecretStore{}
-				ds := &postgreSQL{}
-				w := worker{
-					ss: ss,
-					ds: ds,
+				w := &worker{
+					ss: secretstore.NewDummySecretStore(),
+					ds: datasource.NewPostgreSQL(),
 				}
 
 				statusCode := 200
@@ -135,75 +135,35 @@ type worker struct {
 }
 
 type secretStore interface {
-	load(dataSourceType string) (interface{}, error)
+	Load(dataSourceType string) (interface{}, error)
 }
 
 type dataSource interface {
-	parse(string) error
-	connect(interface{}) error
-	execute(string) (string, error)
-	close() error
+	Parse(string) error
+	Connect(interface{}) error
+	Execute(string) (string, error)
+	Close() error
 }
 
 func (w *worker) run(typ, query string) (string, error) {
-	secret, err := w.ss.load(typ)
+	secret, err := w.ss.Load(typ)
 	if err != nil {
 		return "", err
 	}
 
-	if err := w.ds.parse(query); err != nil {
+	if err := w.ds.Parse(query); err != nil {
 		return "", err
 	}
 
-	if err := w.ds.connect(secret); err != nil {
+	if err := w.ds.Connect(secret); err != nil {
 		return "", err
 	}
-	defer w.ds.close()
+	defer w.ds.Close()
 
-	result, err := w.ds.execute(query)
+	result, err := w.ds.Execute(query)
 	if err != nil {
 		return "", err
 	}
 
 	return result, nil
-}
-
-type dummySecretStore struct {
-}
-
-func (dummySecretStore) load(typ string) (interface{}, error) {
-	fmt.Println("not yet impl")
-
-	_ = typ
-	return "dummy secret", nil
-}
-
-type postgreSQL struct {
-	// having db connection
-}
-
-func (pq *postgreSQL) parse(query string) error {
-	fmt.Println("not yet impl")
-	fmt.Println(query)
-	return nil
-}
-
-func (pq *postgreSQL) connect(raw interface{}) error {
-	fmt.Println("not yet impl")
-
-	secret := raw.(string)
-	fmt.Println("connect to data source using secret", secret)
-	return nil
-}
-
-func (pq *postgreSQL) execute(query string) (string, error) {
-	fmt.Println("not yet impl")
-
-	_ = query
-	return "555", nil
-}
-
-func (pq *postgreSQL) close() error {
-	fmt.Println("not yet impl")
-	return nil
 }
