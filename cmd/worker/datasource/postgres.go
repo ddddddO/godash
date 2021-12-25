@@ -53,6 +53,5 @@ func (pg *postgreSQL) Execute(query string) (string, error) {
 }
 
 func (pg *postgreSQL) Close() error {
-	fmt.Println("not yet impl")
-	return nil
+	return pg.conn.Close(context.TODO())
 }

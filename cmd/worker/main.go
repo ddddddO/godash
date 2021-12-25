@@ -135,6 +135,7 @@ type worker struct {
 	ds dataSource  // 増やせるだけ...
 }
 
+// TODO: clientがデータソースの認証情報渡して、こちらはどこかに書き込む。それを読みだしてもいいかも
 type secretStore interface {
 	Load(dataSourceType string) (interface{}, error)
 }
