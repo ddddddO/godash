@@ -37,17 +37,16 @@ func (pg *postgreSQL) Connect(raw interface{}) error {
 }
 
 func (pg *postgreSQL) Execute(query string) (string, error) {
-	query = `select tablename, tableowner from pg_catalog.pg_tables where schemaname = 'public'`
 	rows, err := pg.conn.Query(context.TODO(), query)
 	if err != nil {
 		return "", err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var name string
-		var owner string
-		rows.Scan(&name, &owner)
-		fmt.Printf("%s owned by %s\n", name, owner)
+		var firstName string
+		var lastName string
+		rows.Scan(&firstName, &lastName)
+		fmt.Printf("%s %s\n", firstName, lastName)
 	}
 
 	return "555", nil

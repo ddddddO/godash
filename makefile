@@ -8,7 +8,7 @@ run_worker:
 	go run cmd/worker/main.go
 
 run_cli:
-	go run cmd/cli/main.go
+	go run cmd/cli/main.go -q "select first_name, last_name from actor limit 1"
 
 # 準備：https://qiita.com/yomon8/items/10b6cd47dda3fd3921c0
 PASSWORD=passw0rd

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net"
 	"sync"
@@ -22,6 +23,12 @@ func main() {
 	// データソース接続情報保存（どこに？DB or redis?）
 	// クエリ取得（コマンドライン引数 or 標準入力 or ...）
 
+	var (
+		query string
+	)
+	flag.StringVar(&query, "q", "", "QUERY")
+	flag.Parse()
+
 	conn, err := net.Dial(
 		protocol,
 		fmt.Sprintf("%s:%d", targetHost, targetPort),
@@ -35,7 +42,7 @@ func main() {
 
 	pgTask := model.Task{
 		DataSourceType: "postgres",
-		Query:          "select * from test",
+		Query:          query,
 	}
 
 	wg := &sync.WaitGroup{}
