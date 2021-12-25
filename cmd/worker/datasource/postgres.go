@@ -9,7 +9,7 @@ import (
 )
 
 type postgreSQL struct {
-	// having db connection
+	conn *pgx.Conn
 }
 
 func NewPostgreSQL() *postgreSQL {
@@ -28,21 +28,28 @@ func (pg *postgreSQL) Connect(raw interface{}) error {
 	conn, err := pgx.Connect(context.Background(), url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		return err
 	}
-	defer conn.Close(context.Background())
+	pg.conn = conn
 
-	fmt.Println("not yet impl")
-
-	secret := raw.(string)
-	fmt.Println("connect to data source using secret", secret)
+	fmt.Println("connect to data source using secret")
 	return nil
 }
 
 func (pg *postgreSQL) Execute(query string) (string, error) {
-	fmt.Println("not yet impl")
+	query = `select tablename, tableowner from pg_catalog.pg_tables where schemaname = 'public'`
+	rows, err := pg.conn.Query(context.TODO(), query)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		var owner string
+		rows.Scan(&name, &owner)
+		fmt.Printf("%s owned by %s\n", name, owner)
+	}
 
-	_ = query
 	return "555", nil
 }
 
