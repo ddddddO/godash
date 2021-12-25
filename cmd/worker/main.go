@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -13,6 +14,8 @@ import (
 	"github.com/ddddddO/godash/cmd/worker/datasource"
 	"github.com/ddddddO/godash/cmd/worker/secretstore"
 	"github.com/ddddddO/godash/model"
+
+	"github.com/urfave/cli/v2"
 )
 
 type taskAndConn struct {
@@ -20,19 +23,42 @@ type taskAndConn struct {
 	conn net.Conn
 }
 
+// TODO:
+// データソース接続情報取得（どこから？DB or redis?）
+// データソース接続
+// クエリ取得
+// クエリパース
+// クエリ投げる
+// クエリ結果の返却
 func main() {
-	// TODO:
-	// データソース接続情報取得（どこから？DB or redis?）
-	// データソース接続
-	// クエリ取得
-	// クエリパース
-	// クエリ投げる
-	// クエリ結果の返却
+	app := &cli.App{
+		Commands: []*cli.Command{
+			{
+				Name:    "run",
+				Aliases: []string{"r"},
+				Usage:   "worker run",
+				Action:  action,
+			},
+		},
+	}
 
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func action(c *cli.Context) error {
 	fmt.Println("start worker")
 
 	ctx, cancel := context.WithCancel(context.Background())
-	run(ctx)
+	tasks := make(chan *taskAndConn)
+
+	// 複数タスク受け付けてキューにエンキューするgoroutine
+	go recieveTasks(ctx, tasks)
+
+	// キューから受け付けたタスクをデキューして処理するgoroutine
+	go processTasks(ctx, tasks)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, os.Interrupt)
@@ -41,16 +67,7 @@ func main() {
 	fmt.Println("graceful shutdown...")
 	cancel()
 	time.Sleep(3 * time.Second)
-}
-
-func run(ctx context.Context) {
-	tasks := make(chan *taskAndConn)
-
-	// 複数タスク受け付けてキューにエンキューするgoroutine
-	go recieveTasks(ctx, tasks)
-
-	// キューから受け付けたタスクをデキューして処理するgoroutine
-	go processTasks(ctx, tasks)
+	return nil
 }
 
 func recieveTasks(_ context.Context, tasks chan<- *taskAndConn) {

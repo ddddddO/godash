@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"sync"
 
 	"github.com/ddddddO/godash/model"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -16,19 +18,29 @@ const (
 	targetPort = 9999
 )
 
+// TODO:
+// データソース接続情報（コマンドライン引数 or 設定ファイル or ...）
+// データソース接続確認
+// データソース接続情報保存（どこに？DB or redis?）
+// クエリ取得（コマンドライン引数 or 標準入力 or ...）
 func main() {
-	// TODO:
-	// データソース接続情報（コマンドライン引数 or 設定ファイル or ...）
-	// データソース接続確認
-	// データソース接続情報保存（どこに？DB or redis?）
-	// クエリ取得（コマンドライン引数 or 標準入力 or ...）
+	app := &cli.App{
+		Commands: []*cli.Command{
+			{
+				Name:    "query",
+				Aliases: []string{"q"},
+				Usage:   "query send to worker",
+				Action:  actionQuery,
+			},
+		},
+	}
 
-	var (
-		query string
-	)
-	flag.StringVar(&query, "q", "", "QUERY")
-	flag.Parse()
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
+}
 
+func actionQuery(c *cli.Context) error {
 	conn, err := net.Dial(
 		protocol,
 		fmt.Sprintf("%s:%d", targetHost, targetPort),
@@ -38,12 +50,14 @@ func main() {
 	}
 	defer conn.Close()
 
-	fmt.Println("send task")
+	query := c.Args().First()
 
-	pgTask := model.Task{
+	task := model.Task{
 		DataSourceType: "postgres",
 		Query:          query,
 	}
+
+	fmt.Println("send task")
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -61,9 +75,10 @@ func main() {
 	}()
 
 	// taskをworkerプロセスへ
-	if err := json.NewEncoder(conn).Encode(pgTask); err != nil {
+	if err := json.NewEncoder(conn).Encode(task); err != nil {
 		panic(err)
 	}
 
 	wg.Wait()
+	return nil
 }
