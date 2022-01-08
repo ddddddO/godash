@@ -17,7 +17,7 @@ func TestPostgreSQL_Parse(t *testing.T) {
 			query: "delete * from test1",
 			wantParsedQuery: &parsedQuery{
 				qType: deleteType,
-				query: "delete * from test1",
+				value: "delete * from test1",
 			},
 			wantErr: nil,
 		},

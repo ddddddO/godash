@@ -23,7 +23,7 @@ const (
 
 type parsedQuery struct {
 	qType queryType
-	query string
+	value string
 }
 
 type postgreSQL struct {
@@ -43,45 +43,46 @@ var (
 // クエリ文字列の先頭の空白除去
 // select/insert/update/deleteの文字列がプレフィックスにあれば、一旦パース成功とみなす
 func (pg *postgreSQL) Parse(query string) error {
-	q := strings.TrimSpace(query)
-	if err := pg.validate(q); err != nil {
+	pq := &parsedQuery{
+		value: strings.TrimSpace(query),
+	}
+	if err := pq.validate(); err != nil {
 		return err
 	}
+	pq.decideQueryType()
 
-	pg.parsedQuery = &parsedQuery{
-		qType: pg.decideQueryType(q),
-		query: q,
-	}
+	pg.parsedQuery = pq
 
 	return nil
 }
 
-func (*postgreSQL) validate(query string) error {
+func (pq *parsedQuery) validate() error {
 	switch {
-	case strings.HasPrefix(query, "select"):
+	case strings.HasPrefix(pq.value, "select"):
 		return nil
-	case strings.HasPrefix(query, "insert"):
+	case strings.HasPrefix(pq.value, "insert"):
 		return nil
-	case strings.HasPrefix(query, "update"):
+	case strings.HasPrefix(pq.value, "update"):
 		return nil
-	case strings.HasPrefix(query, "delete"):
+	case strings.HasPrefix(pq.value, "delete"):
 		return nil
 	}
 	return errUndefinedType
 }
 
-func (*postgreSQL) decideQueryType(query string) queryType {
+func (pq *parsedQuery) decideQueryType() {
+	qType := undefined
 	switch {
-	case strings.HasPrefix(query, "select"):
-		return selectType
-	case strings.HasPrefix(query, "insert"):
-		return insertType
-	case strings.HasPrefix(query, "update"):
-		return updateType
-	case strings.HasPrefix(query, "delete"):
-		return deleteType
+	case strings.HasPrefix(pq.value, "select"):
+		qType = selectType
+	case strings.HasPrefix(pq.value, "insert"):
+		qType = insertType
+	case strings.HasPrefix(pq.value, "update"):
+		qType = updateType
+	case strings.HasPrefix(pq.value, "delete"):
+		qType = deleteType
 	}
-	return undefined
+	pq.qType = qType
 }
 
 func (pg *postgreSQL) Connect(raw interface{}) error {
@@ -98,7 +99,7 @@ func (pg *postgreSQL) Connect(raw interface{}) error {
 // TODO: ここをやっていく
 // 難しそう。ParseメソッドでExecuteメソッドが使いやすいようなstructを用意した方がいいかも
 func (pg *postgreSQL) Execute() (string, error) {
-	rows, err := pg.conn.Query(context.TODO(), pg.parsedQuery.query)
+	rows, err := pg.conn.Query(context.TODO(), pg.parsedQuery.value)
 	if err != nil {
 		return "", err
 	}
