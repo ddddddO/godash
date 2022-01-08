@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+// TODO: test case 増やす
 func TestPostgreSQL_Parse(t *testing.T) {
 	tests := []struct {
 		query           string

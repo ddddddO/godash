@@ -122,7 +122,7 @@ func actionQuery(c *cli.Context) error {
 			return
 		}
 
-		fmt.Printf("Result\nstatus: %d\nquery result: %s\n", result.StatusCode, result.QueryResult)
+		fmt.Printf("Result\nstatus: %d\nquery result:\n%s\n", result.StatusCode, result.QueryResult)
 	}()
 
 	// taskをworkerプロセスへ

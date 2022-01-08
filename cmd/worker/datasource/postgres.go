@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
@@ -103,7 +104,21 @@ func (pg *postgreSQL) Execute() (string, error) {
 	defer rows.Close()
 
 	ret := ""
+	onceGetColumns := sync.Once{}
 	for rows.Next() {
+		// 最初だけ選択されたカラム名を取得
+		onceGetColumns.Do(
+			func() {
+				fds := rows.FieldDescriptions()
+				header := ""
+				for _, fd := range fds {
+					header += string(fd.Name) + " "
+				}
+
+				ret += header + fmt.Sprintln()
+			},
+		)
+
 		// これをつかえば良さそう
 		// https://pkg.go.dev/github.com/jackc/pgx#Rows.Values
 		values, err := rows.Values()
@@ -122,9 +137,10 @@ func (pg *postgreSQL) Execute() (string, error) {
 				ret += string(v.(int))
 			}
 		}
-
-		fmt.Println(ret)
+		ret += fmt.Sprintln()
 	}
+
+	fmt.Println(ret)
 
 	return ret, nil
 }
