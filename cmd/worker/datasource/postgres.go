@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -43,19 +44,19 @@ var (
 // select/insert/update/deleteの文字列がプレフィックスにあれば、一旦パース成功とみなす
 func (pg *postgreSQL) Parse(query string) error {
 	q := strings.TrimSpace(query)
-	if err := validate(q); err != nil {
+	if err := pg.validate(q); err != nil {
 		return err
 	}
 
 	pg.parsedQuery = &parsedQuery{
-		qType: decideQueryType(q),
+		qType: pg.decideQueryType(q),
 		query: q,
 	}
 
 	return nil
 }
 
-func validate(query string) error {
+func (*postgreSQL) validate(query string) error {
 	switch {
 	case strings.HasPrefix(query, "select"):
 		return nil
@@ -69,7 +70,7 @@ func validate(query string) error {
 	return errUndefinedType
 }
 
-func decideQueryType(query string) queryType {
+func (*postgreSQL) decideQueryType(query string) queryType {
 	switch {
 	case strings.HasPrefix(query, "select"):
 		return selectType
@@ -133,8 +134,7 @@ func (pg *postgreSQL) Execute() (string, error) {
 			case string:
 				ret += v.(string) + " "
 			case int:
-				// FIXME: using strconv
-				ret += string(v.(int))
+				ret += string(strconv.Itoa(v.(int)))
 			}
 		}
 		ret += fmt.Sprintln()
