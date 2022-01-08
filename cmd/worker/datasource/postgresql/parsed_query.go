@@ -21,14 +21,18 @@ func newParsedQuery(rawQuery string) *parsedQuery {
 }
 
 func (pq *parsedQuery) validate() error {
+	if err := pq.validateStatementKind(); err != nil {
+		return err
+	}
+
+	// TODO: validation用メソッドを追加していく
+
+	return nil
+}
+
+func (pq *parsedQuery) validateStatementKind() error {
 	switch {
-	case pq.isSelect():
-		return nil
-	case pq.isInsert():
-		return nil
-	case pq.isUpdate():
-		return nil
-	case pq.isDelete():
+	case pq.isSelect(), pq.isInsert(), pq.isUpdate(), pq.isDelete():
 		return nil
 	}
 	return errUndefinedType
