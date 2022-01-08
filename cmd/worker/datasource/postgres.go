@@ -12,7 +12,8 @@ import (
 type queryType uint
 
 const (
-	selectType queryType = iota
+	undefined queryType = iota
+	selectType
 	insertType
 	updateType
 	deleteType
@@ -40,16 +41,45 @@ var (
 // クエリ文字列の先頭の空白除去
 // select/insert/update/deleteの文字列がプレフィックスにあれば、一旦パース成功とみなす
 func (pg *postgreSQL) Parse(query string) error {
-	if !strings.HasPrefix(query, "select") {
-		return errUndefinedType
+	q := strings.TrimSpace(query)
+	if err := validate(q); err != nil {
+		return err
 	}
 
 	pg.parsedQuery = &parsedQuery{
-		qType: selectType,
-		query: query,
+		qType: decideQueryType(q),
+		query: q,
 	}
 
 	return nil
+}
+
+func validate(query string) error {
+	switch {
+	case strings.HasPrefix(query, "select"):
+		return nil
+	case strings.HasPrefix(query, "insert"):
+		return nil
+	case strings.HasPrefix(query, "update"):
+		return nil
+	case strings.HasPrefix(query, "delete"):
+		return nil
+	}
+	return errUndefinedType
+}
+
+func decideQueryType(query string) queryType {
+	switch {
+	case strings.HasPrefix(query, "select"):
+		return selectType
+	case strings.HasPrefix(query, "insert"):
+		return insertType
+	case strings.HasPrefix(query, "update"):
+		return updateType
+	case strings.HasPrefix(query, "delete"):
+		return deleteType
+	}
+	return undefined
 }
 
 func (pg *postgreSQL) Connect(raw interface{}) error {
@@ -74,10 +104,26 @@ func (pg *postgreSQL) Execute() (string, error) {
 
 	ret := ""
 	for rows.Next() {
-		var firstName string
-		var lastName string
-		rows.Scan(&firstName, &lastName)
-		ret = fmt.Sprintf("%s %s\n", firstName, lastName)
+		// これをつかえば良さそう
+		// https://pkg.go.dev/github.com/jackc/pgx#Rows.Values
+		values, err := rows.Values()
+		if err != nil {
+			fmt.Println(err)
+			return "", err
+		}
+
+		// タイプアサーションの数を増やせばよさそう
+		for _, v := range values {
+			switch v.(type) {
+			case string:
+				ret += v.(string) + " "
+			case int:
+				// FIXME: using strconv
+				ret += string(v.(int))
+			}
+		}
+
+		fmt.Println(ret)
 	}
 
 	return ret, nil

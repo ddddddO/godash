@@ -2,6 +2,8 @@ package datasource
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestPostgreSQL_Parse(t *testing.T) {
@@ -11,10 +13,16 @@ func TestPostgreSQL_Parse(t *testing.T) {
 		wantErr         error
 	}{
 		{
-			query:   "delete * from test1",
-			wantErr: errUndefinedType,
+			query: "delete * from test1",
+			wantParsedQuery: &parsedQuery{
+				qType: deleteType,
+				query: "delete * from test1",
+			},
+			wantErr: nil,
 		},
 	}
+
+	opt := cmp.AllowUnexported(parsedQuery{})
 
 	for _, tt := range tests {
 		p := NewPostgreSQL()
@@ -23,8 +31,8 @@ func TestPostgreSQL_Parse(t *testing.T) {
 		if gotErr != tt.wantErr {
 			t.Errorf("\ngotErr: \n%v\nwantErr: \n%v", gotErr, tt.wantErr)
 		}
-		if p.parsedQuery != tt.wantParsedQuery {
-			t.Errorf("\ngotParsedQuery: \n%v\nwantParsedQuery: \n%v", p.parsedQuery, tt.wantParsedQuery)
+		if diff := cmp.Diff(p.parsedQuery, tt.wantParsedQuery, opt); diff != "" {
+			t.Errorf("parsedQuery is mismatch (-gotParsedQuery +wantParsedQuery):\n%s", diff)
 		}
 	}
 }
