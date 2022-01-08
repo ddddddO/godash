@@ -85,7 +85,8 @@ func (pg *postgreSQL) executeSelect() (string, error) {
 				fds := rows.FieldDescriptions()
 				header := ""
 				for _, fd := range fds {
-					header += string(fd.Name) + " "
+					column := string(fd.Name)
+					header += column + " "
 				}
 
 				ret += header + fmt.Sprintln()
@@ -106,7 +107,7 @@ func (pg *postgreSQL) executeSelect() (string, error) {
 			case string:
 				ret += v.(string) + " "
 			case int:
-				ret += string(strconv.Itoa(v.(int)))
+				ret += string(strconv.Itoa(v.(int))) + " "
 			}
 		}
 		ret += fmt.Sprintln()
