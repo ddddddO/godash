@@ -4,6 +4,9 @@ Redash Go implementation
 # Usage
 ## worker
 ```console
+# first set up postgresql
+make setup_pg
+
 # worker start
 make run_worker
 ```

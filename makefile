@@ -25,5 +25,9 @@ run_pg:
 	-v /home/ochi/pg_sample:/tmp/data \
 	postgres:$(VERSION)-alpine
 
+setup_pg: run_pg
+	docker exec sampledb psql -U postgres -c "create database dvdrental" && \
+	docker exec sampledb pg_restore -U postgres -d dvdrental /tmp/data/dvdrental.tar
+
 conn_pg:
 	PGPASSWORD=$(PASSWORD) psql -U postgres -p 15432 -d dvdrental -h localhost
