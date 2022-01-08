@@ -1,4 +1,4 @@
-package datasource
+package postgresql
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ func TestPostgreSQL_Parse(t *testing.T) {
 	opt := cmp.AllowUnexported(parsedQuery{})
 
 	for _, tt := range tests {
-		p := NewPostgreSQL()
+		p := New()
 
 		gotErr := p.Parse(tt.query)
 		if gotErr != tt.wantErr {

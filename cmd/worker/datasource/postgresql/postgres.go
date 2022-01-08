@@ -1,4 +1,4 @@
-package datasource
+package postgresql
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type postgreSQL struct {
 	parsedQuery *parsedQuery
 }
 
-func NewPostgreSQL() *postgreSQL {
+func New() *postgreSQL {
 	return &postgreSQL{}
 }
 

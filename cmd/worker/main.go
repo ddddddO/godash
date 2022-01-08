@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ddddddO/godash/cmd/worker/datasource"
+	"github.com/ddddddO/godash/cmd/worker/datasource/postgresql"
 	"github.com/ddddddO/godash/cmd/worker/secretstore"
 	"github.com/ddddddO/godash/model"
 
@@ -124,7 +124,7 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 
 			w := newWorker(
 				secretstore.NewFile(filePath),
-				datasource.NewPostgreSQL(),
+				postgresql.New(),
 			)
 
 			switch t.Task.Kind {
