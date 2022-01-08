@@ -33,13 +33,13 @@ func newParsedQuery(rawQuery string) *parsedQuery {
 
 func (pq *parsedQuery) validate() error {
 	switch {
-	case strings.HasPrefix(pq.value, "select"):
+	case pq.isSelect():
 		return nil
-	case strings.HasPrefix(pq.value, "insert"):
+	case pq.isInsert():
 		return nil
-	case strings.HasPrefix(pq.value, "update"):
+	case pq.isUpdate():
 		return nil
-	case strings.HasPrefix(pq.value, "delete"):
+	case pq.isDelete():
 		return nil
 	}
 	return errUndefinedType
@@ -48,14 +48,30 @@ func (pq *parsedQuery) validate() error {
 func (pq *parsedQuery) decideQueryType() {
 	qType := undefined
 	switch {
-	case strings.HasPrefix(pq.value, "select"):
+	case pq.isSelect():
 		qType = selectType
-	case strings.HasPrefix(pq.value, "insert"):
+	case pq.isInsert():
 		qType = insertType
-	case strings.HasPrefix(pq.value, "update"):
+	case pq.isUpdate():
 		qType = updateType
-	case strings.HasPrefix(pq.value, "delete"):
+	case pq.isDelete():
 		qType = deleteType
 	}
 	pq.qType = qType
+}
+
+func (pq *parsedQuery) isSelect() bool {
+	return strings.HasPrefix(pq.value, "select")
+}
+
+func (pq *parsedQuery) isInsert() bool {
+	return strings.HasPrefix(pq.value, "insert")
+}
+
+func (pq *parsedQuery) isUpdate() bool {
+	return strings.HasPrefix(pq.value, "update")
+}
+
+func (pq *parsedQuery) isDelete() bool {
+	return strings.HasPrefix(pq.value, "delete")
 }
