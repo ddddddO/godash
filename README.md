@@ -2,10 +2,17 @@
 Redash Go implementation
 
 # Usage
+## worker
 ```console
 # worker start
-go run cmd/worker/main.go
+make run_worker
+```
 
-# send task to worker on different terminal
-go run cmd/cli/main.go
+## client
+```console
+# send task(datasource connection settings) to worker on different terminal
+make run_cli_s
+
+# send task(query) to worker
+make run_cli_q
 ```
