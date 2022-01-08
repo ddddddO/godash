@@ -2,7 +2,8 @@ fmt:
 	go fmt ./...
 
 test:
-	go test ./...
+	go clean -testcache
+	go test ./... -race -v
 
 run_worker:
 	go run cmd/worker/*.go run

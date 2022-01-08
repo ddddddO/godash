@@ -20,7 +20,7 @@ type secretStore interface {
 type dataSource interface {
 	Parse(string) error
 	Connect(interface{}) error
-	Execute(string) (string, error)
+	Execute() (string, error)
 	Close() error
 }
 
@@ -49,7 +49,7 @@ func (w *worker) runQuery(typ, query string) (string, error) {
 	}
 	defer w.ds.Close()
 
-	result, err := w.ds.Execute(query)
+	result, err := w.ds.Execute()
 	if err != nil {
 		return "", err
 	}
