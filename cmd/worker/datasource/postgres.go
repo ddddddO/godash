@@ -16,6 +16,8 @@ func NewPostgreSQL() *postgreSQL {
 }
 
 // TODO: ここをやっていく
+// クエリ文字列の先頭の空白除去
+// select/insert/update/deleteの文字列がプレフィックスにあれば、一旦パース成功とみなす
 func (pg *postgreSQL) Parse(query string) error {
 	fmt.Println("not yet impl")
 	fmt.Println(query)
@@ -34,6 +36,7 @@ func (pg *postgreSQL) Connect(raw interface{}) error {
 }
 
 // TODO: ここをやっていく
+// 難しそう。ParseメソッドでExecuteメソッドが使いやすいようなstructを用意した方がいいかも
 func (pg *postgreSQL) Execute(query string) (string, error) {
 	rows, err := pg.conn.Query(context.TODO(), query)
 	if err != nil {
