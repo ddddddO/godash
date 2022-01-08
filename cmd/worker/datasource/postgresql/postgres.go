@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/pkg/errors"
 )
 
 type postgreSQL struct {
@@ -26,8 +27,6 @@ func (pg *postgreSQL) Parse(query string) error {
 	if err := pq.validate(); err != nil {
 		return err
 	}
-	pq.decideQueryType()
-
 	pg.parsedQuery = pq
 
 	return nil
@@ -47,7 +46,31 @@ func (pg *postgreSQL) Connect(raw interface{}) error {
 // TODO: ここをやっていく
 // 難しそう。ParseメソッドでExecuteメソッドが使いやすいようなstructを用意した方がいいかも
 func (pg *postgreSQL) Execute() (string, error) {
-	rows, err := pg.conn.Query(context.TODO(), pg.parsedQuery.value)
+	var (
+		ret string
+		err error
+	)
+
+	switch {
+	case pg.parsedQuery.isSelect():
+		ret, err = pg.executeSelect()
+	case pg.parsedQuery.isInsert():
+		ret, err = "", errors.New("not yet impl")
+	case pg.parsedQuery.isUpdate():
+		ret, err = "", errors.New("not yet impl")
+	case pg.parsedQuery.isDelete():
+		ret, err = "", errors.New("not yet impl")
+	default:
+		ret, err = "", errors.New("unreachable")
+	}
+
+	fmt.Println(ret)
+
+	return ret, err
+}
+
+func (pg *postgreSQL) executeSelect() (string, error) {
+	rows, err := pg.conn.Query(context.TODO(), pg.getQuery())
 	if err != nil {
 		return "", err
 	}
@@ -88,10 +111,15 @@ func (pg *postgreSQL) Execute() (string, error) {
 		}
 		ret += fmt.Sprintln()
 	}
-
-	fmt.Println(ret)
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
 
 	return ret, nil
+}
+
+func (pg *postgreSQL) getQuery() string {
+	return pg.parsedQuery.value
 }
 
 func (pg *postgreSQL) Close() error {

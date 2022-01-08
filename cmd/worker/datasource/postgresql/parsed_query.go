@@ -6,22 +6,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type queryType uint
-
-const (
-	undefined queryType = iota
-	selectType
-	insertType
-	updateType
-	deleteType
-)
-
 var (
 	errUndefinedType = errors.New("sql query is undefined dml")
 )
 
 type parsedQuery struct {
-	qType queryType
 	value string
 }
 
@@ -43,21 +32,6 @@ func (pq *parsedQuery) validate() error {
 		return nil
 	}
 	return errUndefinedType
-}
-
-func (pq *parsedQuery) decideQueryType() {
-	qType := undefined
-	switch {
-	case pq.isSelect():
-		qType = selectType
-	case pq.isInsert():
-		qType = insertType
-	case pq.isUpdate():
-		qType = updateType
-	case pq.isDelete():
-		qType = deleteType
-	}
-	pq.qType = qType
 }
 
 func (pq *parsedQuery) isSelect() bool {
