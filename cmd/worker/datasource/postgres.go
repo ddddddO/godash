@@ -4,27 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/pkg/errors"
 )
-
-type queryType uint
-
-const (
-	undefined queryType = iota
-	selectType
-	insertType
-	updateType
-	deleteType
-)
-
-type parsedQuery struct {
-	qType queryType
-	value string
-}
 
 type postgreSQL struct {
 	conn        *pgx.Conn
@@ -35,17 +18,11 @@ func NewPostgreSQL() *postgreSQL {
 	return &postgreSQL{}
 }
 
-var (
-	errUndefinedType = errors.New("sql query is undefined dml")
-)
-
 // TODO: ここをやっていく
 // クエリ文字列の先頭の空白除去
 // select/insert/update/deleteの文字列がプレフィックスにあれば、一旦パース成功とみなす
 func (pg *postgreSQL) Parse(query string) error {
-	pq := &parsedQuery{
-		value: strings.TrimSpace(query),
-	}
+	pq := newParsedQuery(query)
 	if err := pq.validate(); err != nil {
 		return err
 	}
@@ -54,35 +31,6 @@ func (pg *postgreSQL) Parse(query string) error {
 	pg.parsedQuery = pq
 
 	return nil
-}
-
-func (pq *parsedQuery) validate() error {
-	switch {
-	case strings.HasPrefix(pq.value, "select"):
-		return nil
-	case strings.HasPrefix(pq.value, "insert"):
-		return nil
-	case strings.HasPrefix(pq.value, "update"):
-		return nil
-	case strings.HasPrefix(pq.value, "delete"):
-		return nil
-	}
-	return errUndefinedType
-}
-
-func (pq *parsedQuery) decideQueryType() {
-	qType := undefined
-	switch {
-	case strings.HasPrefix(pq.value, "select"):
-		qType = selectType
-	case strings.HasPrefix(pq.value, "insert"):
-		qType = insertType
-	case strings.HasPrefix(pq.value, "update"):
-		qType = updateType
-	case strings.HasPrefix(pq.value, "delete"):
-		qType = deleteType
-	}
-	pq.qType = qType
 }
 
 func (pg *postgreSQL) Connect(raw interface{}) error {
