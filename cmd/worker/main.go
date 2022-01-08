@@ -23,12 +23,12 @@ type taskAndConn struct {
 }
 
 // TODO:
-// データソース接続情報取得（どこから？DB or redis?）
-// データソース接続
-// クエリ取得
-// クエリパース
-// クエリ投げる
-// クエリ結果の返却
+// データソース接続情報取得（どこから？DB or redis?）<- clientからもらってファイルに保存した
+// データソース接続 <- postgresqlのみ対応した
+// クエリ取得 <- clientから受信できるよう対応した
+// クエリパース <- TODO: まだ
+// クエリ投げる <- postgresのみ対応した
+// クエリ結果の返却 <- TODO: 特定のクエリしか対応してない。どうすればいいんだろう
 func main() {
 	app := &cli.App{
 		Commands: []*cli.Command{
@@ -110,6 +110,10 @@ func recieveTasks(_ context.Context, tasks chan<- *taskAndConn) {
 	}
 }
 
+// clientから受信した接続情報を保存する先のファイルパス
+// worker起動時に設定ファイルから接続情報格納先を取得して決める、でもいいかも
+const filePath = "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
+
 func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 	for {
 		select {
@@ -134,9 +138,6 @@ func processTasks(ctx context.Context, tasks <-chan *taskAndConn) {
 		}
 	}
 }
-
-// worker起動時に設定ファイルから接続情報格納先を取得して決める、でもいいかも
-const filePath = "/mnt/c/DEV/workspace/GO/src/github.com/ddddddO/godash/testdata/postgres_connection_info"
 
 func settings(t *taskAndConn, w *worker) {
 	defer t.conn.Close()
