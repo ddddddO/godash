@@ -15,6 +15,7 @@ func NewPostgreSQL() *postgreSQL {
 	return &postgreSQL{}
 }
 
+// TODO: ここをやっていく
 func (pg *postgreSQL) Parse(query string) error {
 	fmt.Println("not yet impl")
 	fmt.Println(query)
@@ -32,6 +33,7 @@ func (pg *postgreSQL) Connect(raw interface{}) error {
 	return nil
 }
 
+// TODO: ここをやっていく
 func (pg *postgreSQL) Execute(query string) (string, error) {
 	rows, err := pg.conn.Query(context.TODO(), query)
 	if err != nil {
