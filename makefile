@@ -14,7 +14,7 @@ run_cli_s:
 
 # query実行
 run_cli_q:
-	go run cmd/cli/main.go query "select first_name, last_name from actor limit 2"
+	go run cmd/cli/main.go query "select first_name, last_name, last_update from actor limit 3"
 
 # 準備：https://qiita.com/yomon8/items/10b6cd47dda3fd3921c0
 PASSWORD=passw0rd

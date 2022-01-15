@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
@@ -107,6 +108,10 @@ func (pg *postgreSQL) executeSelect() (string, error) {
 				ret += v.(string) + " "
 			case int:
 				ret += string(strconv.Itoa(v.(int))) + " "
+			case time.Time:
+				ret += v.(time.Time).Format("2006/01/02")
+			default:
+				fmt.Printf("DEBUG type: %T, value: %v \n", v, v)
 			}
 		}
 		ret += fmt.Sprintln()

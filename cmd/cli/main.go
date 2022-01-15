@@ -6,9 +6,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/ddddddO/godash/model"
+	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,8 +66,6 @@ func actionSettings(c *cli.Context) error {
 		Settings:       settings,
 	}
 
-	fmt.Println("send task")
-
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	// 結果を受け取るよう
@@ -78,7 +78,7 @@ func actionSettings(c *cli.Context) error {
 			return
 		}
 
-		fmt.Printf("Result\nstatus: %d\n", result.StatusCode)
+		fmt.Printf("status: %d\n", result.StatusCode)
 	}()
 
 	// taskをworkerプロセスへ
@@ -108,8 +108,6 @@ func actionQuery(c *cli.Context) error {
 		Query:          query,
 	}
 
-	fmt.Println("send task")
-
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	// query結果を受け取るよう
@@ -122,7 +120,11 @@ func actionQuery(c *cli.Context) error {
 			return
 		}
 
-		fmt.Printf("Result\nstatus: %d\nquery result:\n%s\n", result.StatusCode, result.QueryResult)
+		fmt.Printf("status: %d\nquery result:\n", result.StatusCode)
+		if err := showQueryResult(result.QueryResult); err != nil {
+			fmt.Println(err)
+			return
+		}
 	}()
 
 	// taskをworkerプロセスへ
@@ -131,5 +133,24 @@ func actionQuery(c *cli.Context) error {
 	}
 
 	wg.Wait()
+	return nil
+}
+
+// FIXME: ここはworker側がどんな文字列を返すかによって処理が決まる。
+// FIXME: あと表示がバグってる
+func showQueryResult(raw string) error {
+	rows := strings.Split(raw, "\n")
+	header := strings.Split(rows[0], " ")
+	valuesRows := rows[1:]
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(header)
+	for _, row := range valuesRows {
+		values := strings.Split(row, " ")
+		if values[0] == "" { // FIXME: もっとちゃんとした方が良さそう
+			continue
+		}
+		table.Append(values)
+	}
+	table.Render()
 	return nil
 }
