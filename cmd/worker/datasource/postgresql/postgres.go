@@ -97,7 +97,6 @@ func (pg *postgreSQL) executeSelect() (string, error) {
 		// https://pkg.go.dev/github.com/jackc/pgx#Rows.Values
 		values, err := rows.Values()
 		if err != nil {
-			fmt.Println(err)
 			return "", err
 		}
 
